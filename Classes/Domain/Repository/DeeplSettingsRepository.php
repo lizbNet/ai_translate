@@ -56,10 +56,11 @@ class DeeplSettingsRepository
      */
     public function insertDeeplSettings($data)
     {
+
         $this->queryBuilder('tx_deepl_settings')
             ->insert('tx_deepl_settings')
             ->values($data)
-            ->execute();
+            ->executeQuery();
     }
     /**
      * Description
@@ -68,6 +69,7 @@ class DeeplSettingsRepository
      */
     public function updateDeeplSettings($data)
     {
+        
         $queryBuilder = $this->queryBuilder('tx_deepl_settings');
         $this->queryBuilder('tx_deepl_settings')
             ->update('tx_deepl_settings')
@@ -75,7 +77,7 @@ class DeeplSettingsRepository
                 $queryBuilder->expr()->eq('uid', $data['uid'])
             )
             ->set('languages_assigned', $data['languages_assigned'])
-            ->execute();
+            ->executeQuery();
     }
 
     /**
@@ -87,23 +89,25 @@ class DeeplSettingsRepository
     {
         return $this->queryBuilder('tx_deepl_settings')->select('*')
             ->from('tx_deepl_settings')
-            ->execute()
-            ->fetchAll();
+            ->executeQuery()
+            ->fetchAllAssociative();
     }
 
     /**
      * get language mappings for a syslanguage
      * @return string
      */
-    public function getMappings($uid)
+    public function getMappings($uid, $siteIdentifier)
     {
         //$queryBuilder = $this->queryBuilder('tx_deepl_settings');
         $mappings = $this->queryBuilder('tx_deepl_settings')->select('*')
             ->from('tx_deepl_settings')
-            ->execute()
-            ->fetchAll();
+            ->executeQuery()
+            ->fetchAllAssociative();
+             
         if (!empty($mappings) && !empty($mappings[0]['languages_assigned'])) {
-            $assignments = unserialize($mappings[0]['languages_assigned']);
+            $siteAssignments = unserialize($mappings[0]['languages_assigned']);
+            $assignments = $siteAssignments[$siteIdentifier];
             if (isset($assignments[$uid]) && !empty($assignments[$uid])) {
                 return $assignments[$uid];
             }
@@ -118,14 +122,18 @@ class DeeplSettingsRepository
     public function getSupportedLanguages($apiSupportedLanguages)
     {
         $assignments = $this->getAssignments();
+        $apiSupportedLanguages = [];
         if (!empty($assignments) && $assignments[0]['languages_assigned'] != '') {
-            $languages = unserialize($assignments[0]['languages_assigned']);
-            foreach ($languages as $language) {
-                if (!in_array($language, $apiSupportedLanguages)) {
-                    $apiSupportedLanguages[] = $language;
+            $siteLanguages = unserialize($assignments[0]['languages_assigned']);            
+            foreach ($siteLanguages as $languages) {
+                foreach ($languages as $language) {
+                    if (!in_array($language, $apiSupportedLanguages)) {
+                        $apiSupportedLanguages[] = $language;
+                    }
                 }
             }
         }
+        
         return $apiSupportedLanguages;
     }
 
@@ -137,8 +145,8 @@ class DeeplSettingsRepository
     {
         return $this->queryBuilder('sys_language')->select('uid', 'title', 'language_isocode')
             ->from('sys_language')
-            ->execute()
-            ->fetchAll();
+            ->executeQuery()
+            ->fetchAllAssociative();
     }
     
     /**
@@ -154,6 +162,6 @@ class DeeplSettingsRepository
             ->select($field)
             ->from($table)
             ->where('deleted = 0 AND uid = ' . $recordData['uid'])
-            ->execute()->fetchAll();
+            ->executeQuery()->fetchAllAssociative();
     }
 }
