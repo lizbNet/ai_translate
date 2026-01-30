@@ -94,13 +94,12 @@ class DeeplService
     {
         $postFieldString='';
         $postFields = [
-            'auth_key'     => $this->apiKey,
             'text'         => $content,
             'source_lang'  => urlencode($sourceLanguage),
             'target_lang'  => urlencode($targetLanguage),
             'tag_handling' => urlencode('xml'),
         ];
-        //url-ify the data to get content length
+
         foreach ($postFields as $key => $value) {
             $postFieldString .= $key . '=' . $value . '&';
         }
@@ -110,7 +109,11 @@ class DeeplService
         try {
             $response = $this->requestFactory->request($this->apiUrl, 'POST', [
                 'form_params' => $postFields,
-                'headers'     => ['Content-Type: application/x-www-form-urlencoded', 'Content-Length:' . $contentLength],
+                'headers'     => [
+                    'Content-Type' => 'application/x-www-form-urlencoded',
+                    'Content-Length' => $contentLength,
+                    'Authorization' => 'DeepL-Auth-Key '.$this->apiKey
+                ],
             ]);
         } catch (ClientException $e) {
             $result            = [];
